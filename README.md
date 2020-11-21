@@ -1,5 +1,7 @@
 # smartMeterReader-esp32
 
+![alt](screenshot.png)
+
 ## How to use:
 
 1. Change your credentials in `wifisetup.h` and flash your esp32.
