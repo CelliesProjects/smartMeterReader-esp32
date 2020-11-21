@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <script>
-const debugip="192.168.0.104";  //change this to the esp32 ip for remote running of this page
+const debugip="192.168.0.177";  //change this to the esp32 ip for remote running of this page
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="minimal-ui,width=device-width,initial-scale=1.0,user-scalable=no" />
@@ -73,9 +73,9 @@ $(document).ready(function(){
   ws.onmessage=function(e){
     var dsmr = e.data.split('\n');
     if(dsmr[0])$('#currentUse').html(dsmr[0]+"W");
-    if(dsmr[1])$('#lowUsed').html("Totaal laag tarief: "+(dsmr[1]/1000.0).toFixed(3)+" kWh&nbsp;&nbsp;&nbspvandaag: "+(dsmr[4]/1000.0).toFixed(3)+" kWh");
-    if(dsmr[2])$('#highUsed').html("Totaal hoog tarief: "+(dsmr[2]/1000.0).toFixed(3)+" kWh&nbsp;&nbsp;&nbspvandaag: "+(dsmr[5]/1000.0).toFixed(3)+" kWh");
-    if(dsmr[3])$('#gasUsed').html("Totaal gasgebruik: "+(dsmr[3]/1000.0).toFixed(3)+" m³&nbsp;&nbsp;&nbspvandaag: "+(dsmr[6]/1000.0).toFixed(3)+" m³");
+    if(dsmr[1])$('#lowUsed').html("Totaal laag: "+(dsmr[1]/1000.0).toFixed(3).replace(".", ",")+" kWh&nbsp;&nbsp;&nbspvandaag: "+(dsmr[4]/1000.0).toFixed(3).replace(".", ",")+" kWh");
+    if(dsmr[2])$('#highUsed').html("Totaal hoog: "+(dsmr[2]/1000.0).toFixed(3).replace(".", ",")+" kWh&nbsp;&nbsp;&nbspvandaag: "+(dsmr[5]/1000.0).toFixed(3).replace(".", ",")+" kWh");
+    if(dsmr[3])$('#gasUsed').html("Totaal gas: "+(dsmr[3]/1000.0).toFixed(3).replace(".", ",")+" m³&nbsp;&nbsp;&nbspvandaag: "+(dsmr[6]/1000.0).toFixed(3).replace(".", ",")+" m³");
     if(dsmr[7])$('#tariff').html(dsmr[7]);
   };
 
