@@ -130,8 +130,7 @@ void loop() {
   while (smartMeter.available()) {
     const char incomingChar = smartMeter.read();
     telegram.concat(incomingChar);
-    if ('!' == incomingChar)
-      parseAndSend(telegram);
+    if ('!' == incomingChar) parseAndSend(telegram);
   }
   delay(1);
 }
