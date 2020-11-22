@@ -47,13 +47,7 @@ AsyncWebSocket ws_current("/current");
 HardwareSerial smartMeter(UART_NR);
 SSD1306        oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
 bool           oledFound{false};
-uint8_t        currentDay;
-
-struct {
-  int t1Start{0};
-  int t2Start{0};
-  int gasStart{0};
-} today;
+uint8_t        currentMonthDay;
 
 void setup() {
   Serial.begin(115200);
@@ -99,7 +93,7 @@ void setup() {
 
   while (!getLocalTime(&timeinfo, 0))
     delay(10);
-  currentDay = timeinfo.tm_mday;
+  currentMonthDay = timeinfo.tm_mday;
 
   /* websocket setup */
   ws_raw.onEvent(onEvent);
@@ -127,9 +121,6 @@ void setup() {
   Serial.printf("Listening on HardwareSerial(%i) with RXD_PIN=%i\n", UART_NR, RXD_PIN);
 }
 
-bool coldBoot{true};
-char currentUseString[200];
-
 void loop() {
   static String telegram{""};
 
@@ -137,72 +128,15 @@ void loop() {
   ws_current.cleanupClients();
 
   while (smartMeter.available()) {
-
     const char incomingChar = smartMeter.read();
-
-    if (incomingChar != '!')
-      telegram.concat(incomingChar);
-    else {
-      telegram.concat(incomingChar);
-
-      /* checksum reached, wait for and read 6 more bytes then the telegram is received completely - see DSMR 5.0.2 ¶ 6.2 */
-      while (smartMeter.available() < 6) delay(1);
-
-      while (smartMeter.available()) telegram.concat((char)smartMeter.read());
-
-      ws_raw.textAll(telegram);
-
-      currentUseData data;
-      const ParseResult<void> res = P1Parser::parse(&data, telegram.c_str(), telegram.length());
-
-      if (res.err)
-        ESP_LOGE(TAG, "%s", res.fullError(telegram.c_str(), telegram.c_str() + telegram.length()));
-      else
-      {
-        if (coldBoot) {
-          today.t1Start = data.energy_delivered_tariff1.int_val();
-          today.t2Start = data.energy_delivered_tariff2.int_val();
-          today.gasStart = data.gas_delivered.int_val();
-          coldBoot = false;
-        };
-
-        snprintf(currentUseString, sizeof(currentUseString), "%i\n%i\n%i\n%i\n%i\n%i\n%i\n%s",
-                 data.power_delivered.int_val(),
-                 data.energy_delivered_tariff1.int_val(),
-                 data.energy_delivered_tariff2.int_val(),
-                 data.gas_delivered.int_val(),
-                 data.energy_delivered_tariff1.int_val() - today.t1Start,
-                 data.energy_delivered_tariff2.int_val() - today.t2Start,
-                 data.gas_delivered.int_val() - today.gasStart,
-                 (data.electricity_tariff.equals("0001")) ? "laag" : "hoog"
-                );
-
-        ws_current.textAll(currentUseString);
-
-        if (oledFound) {
-          oled.clear();
-          oled.setFont(ArialMT_Plain_16);
-          oled.drawString(oled.width() >> 1, 0, WiFi.localIP().toString());
-          oled.setFont(ArialMT_Plain_24);
-          oled.drawString(oled.width() >> 1, 18, String(data.power_delivered.int_val()) + "W");
-          oled.display();
-        }
-
-        /* check if we changed day and update starter values if so */
-        struct tm timeinfo = {0};
-        getLocalTime(&timeinfo);
-        if (currentDay != timeinfo.tm_mday) {
-          today.t1Start = data.energy_delivered_tariff1.int_val();
-          today.t2Start = data.energy_delivered_tariff2.int_val();
-          today.gasStart = data.gas_delivered.int_val();
-          currentDay = timeinfo.tm_mday;
-        }
-      }
-      telegram = "";
-    }
+    telegram.concat(incomingChar);
+    if ('!' == incomingChar)
+      parseAndSend(telegram);
   }
   delay(1);
 }
+
+char currentUseString[200];
 
 void onEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
   switch (type) {
@@ -235,4 +169,66 @@ void onEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
     default : ESP_LOGE(TAG, "unhandled ws event type");
   }
+}
+
+void parseAndSend(String& telegram) {
+  /* checksum reached, wait for and read 6 more bytes then the telegram is received completely - see DSMR 5.0.2 ¶ 6.2 */
+  while (smartMeter.available() < 6) delay(1);
+
+  while (smartMeter.available()) telegram.concat((char)smartMeter.read());
+
+  ws_raw.textAll(telegram);
+
+  currentUseData data;
+  const ParseResult<void> res = P1Parser::parse(&data, telegram.c_str(), telegram.length());
+
+  if (res.err) {
+    ESP_LOGE(TAG, "%s", res.fullError(telegram.c_str(), telegram.c_str() + telegram.length()));
+    return;
+  }
+
+  static struct {
+    uint32_t t1Start{0};
+    uint32_t t2Start{0};
+    uint32_t gasStart{0};
+  } today;
+
+  if (!today.t1Start) {
+    today.t1Start = data.energy_delivered_tariff1.int_val();
+    today.t2Start = data.energy_delivered_tariff2.int_val();
+    today.gasStart = data.gas_delivered.int_val();
+  };
+
+  snprintf(currentUseString, sizeof(currentUseString), "%i\n%i\n%i\n%i\n%i\n%i\n%i\n%s",
+           data.power_delivered.int_val(),
+           data.energy_delivered_tariff1.int_val(),
+           data.energy_delivered_tariff2.int_val(),
+           data.gas_delivered.int_val(),
+           data.energy_delivered_tariff1.int_val() - today.t1Start,
+           data.energy_delivered_tariff2.int_val() - today.t2Start,
+           data.gas_delivered.int_val() - today.gasStart,
+           (data.electricity_tariff.equals("0001")) ? "laag" : "hoog"
+          );
+
+  ws_current.textAll(currentUseString);
+
+  if (oledFound) {
+    oled.clear();
+    oled.setFont(ArialMT_Plain_16);
+    oled.drawString(oled.width() >> 1, 0, WiFi.localIP().toString());
+    oled.setFont(ArialMT_Plain_24);
+    oled.drawString(oled.width() >> 1, 18, String(data.power_delivered.int_val()) + "W");
+    oled.display();
+  }
+
+  /* check if we changed day and update starter values if so */
+  struct tm timeinfo = {0};
+  getLocalTime(&timeinfo);
+  if (currentMonthDay != timeinfo.tm_mday) {
+    today.t1Start = data.energy_delivered_tariff1.int_val();
+    today.t2Start = data.energy_delivered_tariff2.int_val();
+    today.gasStart = data.gas_delivered.int_val();
+    currentMonthDay = timeinfo.tm_mday;
+  }
+  telegram = "";
 }
