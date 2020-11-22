@@ -184,8 +184,10 @@ void parseAndSend(String& telegram) {
 
   if (res.err) {
     ESP_LOGE(TAG, "%s", res.fullError(telegram.c_str(), telegram.c_str() + telegram.length()));
+    telegram = "";
     return;
   }
+  telegram = "";
 
   static struct {
     uint32_t t1Start{0};
@@ -230,5 +232,4 @@ void parseAndSend(String& telegram) {
     today.gasStart = data.gas_delivered.int_val();
     currentMonthDay = timeinfo.tm_mday;
   }
-  telegram = "";
 }
