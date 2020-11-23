@@ -5,7 +5,9 @@
 
     and pushes these telegrams to websocket clients connected on '/raw'.
 
-    There is also a websocket '/current' pushing the current wattage to connected clients.
+    There is also a websocket '/current' pushing the current usage stats to connected clients.
+
+    Finally there is a webserver at port 80 with an index page that connects to websocket '/current' and shows energy use info.
 
     How to connect to a p1 port see: https://github.com/matthijskooijman/arduino-dsmr#connecting-the-p1-port
 */
@@ -30,6 +32,7 @@
 #define I2C_SDA_PIN                     (5)
 #define I2C_SCL_PIN                     (4)
 
+/* settings for ntp time sync */
 const char* NTP_POOL =                  "pool.ntp.org";
 const char* TIMEZONE =                  "CET-1CEST,M3.5.0/2,M10.5.0/3"; /* Central European Time - see http://www.remotemonitoringsystems.ca/time-zone-abbreviations.php */
 
@@ -41,13 +44,16 @@ const IPAddress SUBNET(255, 255, 255, 0);                /* Usually 255,255,255,
 const IPAddress PRIMARY_DNS(192, 168, 0, 30);            /* Check in your router */
 const IPAddress SECONDARY_DNS(192, 168, 0, 50);          /* Check in your router */
 
-AsyncWebServer server(80);
-AsyncWebSocket ws_raw("/raw");
-AsyncWebSocket ws_current("/current");
-HardwareSerial smartMeter(UART_NR);
-SSD1306        oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
-bool           oledFound{false};
-uint8_t        currentMonthDay;
+const char*     WS_RAW_URL{"/raw"};
+const char*     WS_CURRENT_URL{"/current"};
+
+AsyncWebServer  server(80);
+AsyncWebSocket  ws_raw(WS_RAW_URL);
+AsyncWebSocket  ws_current(WS_CURRENT_URL);
+HardwareSerial  smartMeter(UART_NR);
+SSD1306         oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
+bool            oledFound{false};
+uint8_t         currentMonthDay;
 
 void setup() {
   Serial.begin(115200);
@@ -142,7 +148,7 @@ void onEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
     case WS_EVT_CONNECT :
       ESP_LOGI(TAG, "[%s][%u] connect", server->url(), client->id());
-      if (0 == strcmp("/current", server->url()))
+      if (0 == strcmp(WS_CURRENT_URL, server->url()))
         client->text(currentUseString);
       break;
 
