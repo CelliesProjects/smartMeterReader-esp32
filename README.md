@@ -34,6 +34,12 @@ The driver library for the ssd1306 oled can be installed with the Arduino librar
 
 ## Hardware
 
-Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna.<br>The TTGO T7 is a nice board with an external antenna connector. 
+Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna. (This reduces the required power)<br>The TTGO T7 is a nice board with an external antenna connector and a decent 3.3v LDO. Without an external antenna the WiFi signal tends to be too poor to be of any use over longer distances and/or through several walls. 
 
 ![T7 pic](t7.jpg)
+
+To invert and level shift the signal you can use a bc547 transistor with some resistors.
+
+![invert-and-level-shift](https://willem.aandewiel.nl/wp-content/uploads/2019/04/DSMR_LevelShifter_Circuit-300x251.png)
+
+See [willem.aandewiel.nl/dsmr-logger-v4-slimme-meter-uitlezer/](https://willem.aandewiel.nl/index.php/2019/04/09/dsmr-logger-v4-slimme-meter-uitlezer/)
