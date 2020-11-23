@@ -9,10 +9,6 @@ No app required!
 
 ![screenshot](screenshot.png)
 
-Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna.<br>The TTGO T7 is a nice board with an external antenna connector. 
-
-![T7 pic](t7.jpg)
-
 ## How to use
 
 1. Change your credentials in `wifisetup.h`.
@@ -35,3 +31,9 @@ The driver library for the ssd1306 oled can be installed with the Arduino librar
 ## DSMR v5 P1 port standard specifications
 
 [DSMR v5.0.2 P1 Companion Standard.pdf](https://github.com/matthijskooijman/arduino-dsmr/blob/master/specs/DSMR%20v5.0.2%20P1%20Companion%20Standard.pdf)
+
+## Hardware
+
+Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna.<br>The TTGO T7 is a nice board with an external antenna connector. 
+
+![T7 pic](t7.jpg)
