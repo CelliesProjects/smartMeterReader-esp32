@@ -11,29 +11,35 @@
 
     How to connect to a p1 port see: https://github.com/matthijskooijman/arduino-dsmr#connecting-the-p1-port
 */
+//#define SH1106_OLED              /* uncomment to compile for SH1106 instead of SSD1306 */
 
 #include <driver/uart.h>
 #include <AsyncTCP.h>              /* https://github.com/me-no-dev/AsyncTCP */
 #include <ESPAsyncWebServer.h>     /* https://github.com/me-no-dev/ESPAsyncWebServer */
-#include <SSD1306.h>               /* Install via 'Manage Libraries' in Arduino IDE -> https://github.com/ThingPulse/esp8266-oled-ssd1306 */
 #include <dsmr.h>                  /* https://github.com/matthijskooijman/arduino-dsmr */
 
 #include "wifisetup.h"
 #include "index_htm.h"
 #include "decoded_fields.h"
 
+#if defined(SH1106_OLED)
+#include <SH1106.h>                /* Install via 'Manage Libraries' in Arduino IDE -> https://github.com/ThingPulse/esp8266-oled-ssd1306 */
+#else
+#include <SSD1306.h>               /* In same library as SH1106 */
+#endif
+
 /* settings for smartMeter */
 #define RXD_PIN                         (26)
 #define BAUDRATE                        (115200)
 #define UART_NR                         (UART_NUM_2)
 
-/* settings for a ssd1306 oled screen */
+/* settings for a ssd1306/sh1106 oled screen */
 #define OLED_ADDRESS                    (0x3C)
-#define I2C_SDA_PIN                     (5)
-#define I2C_SCL_PIN                     (4)
+#define I2C_SDA_PIN                     (21)
+#define I2C_SCL_PIN                     (22)
 
 /* settings for ntp time sync */
-const char* NTP_POOL =                  "pool.ntp.org";
+const char* NTP_POOL =                  "nl.pool.ntp.org";
 const char* TIMEZONE =                  "CET-1CEST,M3.5.0/2,M10.5.0/3"; /* Central European Time - see http://www.remotemonitoringsystems.ca/time-zone-abbreviations.php */
 
 #define SET_STATIC_IP                   false            /* If SET_STATIC_IP is set to true then STATIC_IP, GATEWAY, SUBNET and PRIMARY_DNS have to be set to some sane values */
@@ -51,7 +57,13 @@ AsyncWebServer  server(80);
 AsyncWebSocket  ws_raw(WS_RAW_URL);
 AsyncWebSocket  ws_current(WS_CURRENT_URL);
 HardwareSerial  smartMeter(UART_NR);
+
+#if defined(SH1106_OLED)
+SH1106          oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
+#else
 SSD1306         oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
+#endif
+
 bool            oledFound{false};
 uint8_t         currentMonthDay;
 
@@ -64,10 +76,11 @@ void setup() {
   Wire.beginTransmission(OLED_ADDRESS);
   uint8_t error = Wire.endTransmission();
   if (error)
-    Serial.println("No SSD1306 oled found.");
+    Serial.println("No SSD1306/SH1106 oled found.");
   else {
     oledFound = true;
     oled.init();
+    oled.flipScreenVertically();
     oled.setContrast(10, 5, 0);
     oled.setTextAlignment(TEXT_ALIGN_CENTER);
     oled.setFont(ArialMT_Plain_16);
