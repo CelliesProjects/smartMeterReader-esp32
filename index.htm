@@ -41,16 +41,19 @@ html,body{
 #currentUse{
   font-size:80px;
 }
-#lowUsed, #highUsed, #gasUsed{
+#lowUsed,#highUsed,#gasUsed{
   font-size:20px;
-  margin:20px;
+}
+.useVal{
   white-space:nowrap;
+  margin:5px 15px;
+  display:inline-block;
 }
 </style>
 </head>
 <body class="noselect">
   <h2 id="header">Huidig tarief:&nbsp;&nbsp;<span id="tariff">onbekend</span></h2>
-  <div id="currentUse">Nog geen data</div>
+  <div id="currentUse"></div>
   <div id="totals"><p id="lowUsed"></p><p id="highUsed"></p><p id="gasUsed"></p></div>
 <script>
 var url="http://";
@@ -64,9 +67,9 @@ $(document).ready(function(){
   ws.onmessage=function(e){
     var dsmr = e.data.split('\n');
     if(dsmr[0])$('#currentUse').html(dsmr[0]+"W");
-    if(dsmr[1])$('#lowUsed').html("Totaal laag: "+(dsmr[1]/1000.0).toFixed(3).replace(".", ",")+" kWh&nbsp;&nbsp;&nbsp;vandaag: "+(dsmr[4]/1000.0).toFixed(3).replace(".", ",")+" kWh");
-    if(dsmr[2])$('#highUsed').html("Totaal hoog: "+(dsmr[2]/1000.0).toFixed(3).replace(".", ",")+" kWh&nbsp;&nbsp;&nbsp;vandaag: "+(dsmr[5]/1000.0).toFixed(3).replace(".", ",")+" kWh");
-    if(dsmr[3])$('#gasUsed').html("Totaal gas: "+(dsmr[3]/1000.0).toFixed(3).replace(".", ",")+" m³&nbsp;&nbsp;&nbsp;vandaag: "+(dsmr[6]/1000.0).toFixed(3).replace(".", ",")+" m³");
+    if(dsmr[1])$('#lowUsed').html('<span class="useVal">Totaal laag: '+(dsmr[1]/1000.0).toFixed(3).replace(".", ",")+' kWh</span><span class="useVal">vandaag: '+(dsmr[4]/1000.0).toFixed(3).replace(".", ",")+' kWh</span>');
+    if(dsmr[2])$('#highUsed').html('<span class="useVal">Totaal hoog: '+(dsmr[2]/1000.0).toFixed(3).replace(".", ",")+' kWh</span><span class="useVal">vandaag: '+(dsmr[5]/1000.0).toFixed(3).replace(".", ",")+' kWh</span>');
+    if(dsmr[3])$('#gasUsed').html('<span class="useVal">Totaal gas: '+(dsmr[3]/1000.0).toFixed(3).replace(".", ",")+' m³</span><span class="useVal">vandaag: '+(dsmr[6]/1000.0).toFixed(3).replace(".", ",")+' m³</span>');
     if(dsmr[7])$('#tariff').html(dsmr[7]);
   };
   ws.onopen=function(event){console.log('[WebSocket] Connected');}
