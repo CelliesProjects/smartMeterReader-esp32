@@ -12,11 +12,13 @@ No app required!
 ## How to use
 
 1. Change your credentials in `wifisetup.h`.
-1. (Optional) Change the i2c pin numbers for a connected ssd1306 oled screen in `smartMeterReader-esp32.ino`.
-3. Flash the sketch to your esp32.
+1. (Optional) In `smartMeterReader-esp32.ino` uncomment `#define SH1106_OLED` if you compile for sh1106 instead of ssd1306 and set the i2c pins (and address) for your oled screen.
+3. Save all files and flash the sketch to your esp32.
 4. Connect your esp32 to the smart meter. [See here how](https://github.com/matthijskooijman/arduino-dsmr#connecting-the-p1-port).<br>Take note that to connect to the esp32 the `DATA` signal has to be inverted and level shifted.
-5. If you added a ssd1306 oled screen, the ip address will be visible on the screen.<br>If there is no oled you can check the ip address on the serial port in the Arduino IDE.
+5. If you added a ssd1306/sh1106 oled screen, the ip address will be visible on the screen.<br>If there is no oled you can check the ip address on the serial port in the Arduino IDE.
 6. Browse to the ip address of your esp32 to see your current energy use.
+
+If you have a garbled screen you most likely compiled for the wrong oled type.<br>Try to comment/uncomment `#define SH1106_OLED` to solve this.
 
 ## Needed libraries
 
@@ -26,7 +28,7 @@ No app required!
 
 Download and install these in the Arduino libraries folder.
 
-The driver library for the ssd1306 oled can be installed with the Arduino library manager.
+The driver library for a ssd1306/sh1106 oled can be installed with the Arduino library manager. Use the ThingPulse driver.
 
 ## DSMR v5 P1 port standard specifications
 
@@ -34,7 +36,7 @@ The driver library for the ssd1306 oled can be installed with the Arduino librar
 
 ## Hardware
 
-Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna. (This reduces the required power)<br>The LilyGo TTGO T7 is a nice board with an external antenna connector and a decent 3.3v LDO. Without an external antenna the WiFi signal tends to be too poor to be of any use over longer distances and/or through several walls. 
+Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna. (This reduces the required power)<br>The LilyGo TTGO T7 is a nice board with an external antenna connector and a decent 3.3v LDO. Without an external antenna the WiFi signal tends to be too poor to be of any use over longer distances and/or through several walls.
 
 ![T7 pic](t7.jpg)
 
