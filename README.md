@@ -9,6 +9,8 @@ No app required!
 
 ![screenshot](screenshot.png)
 
+![screenshot](screenshot_android.png)
+
 ## How to use
 
 1. Change your credentials in `wifisetup.h`.
