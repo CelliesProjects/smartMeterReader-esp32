@@ -65,7 +65,6 @@ SSD1306         oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
 #endif
 
 bool            oledFound{false};
-uint8_t         currentMonthDay;
 
 void setup() {
   Serial.begin(115200);
@@ -112,7 +111,6 @@ void setup() {
 
   while (!getLocalTime(&timeinfo, 0))
     delay(10);
-  currentMonthDay = timeinfo.tm_mday;
 
   /* websocket setup */
   ws_raw.onEvent(onEvent);
@@ -208,16 +206,23 @@ void parseAndSend(String& telegram) {
   telegram = "";
 
   static struct {
-    uint32_t t1Start{0};
-    uint32_t t2Start{0};
-    uint32_t gasStart{0};
+    uint32_t t1Start;
+    uint32_t t2Start;
+    uint32_t gasStart;
   } today;
 
-  if (!today.t1Start) {
+  /* out of range value so it will be always be updated in the next check */
+  static uint8_t currentMonthDay{40};
+
+  /* check if we changed day and update starter values if so */
+  struct tm timeinfo = {0};
+  getLocalTime(&timeinfo);
+  if (currentMonthDay != timeinfo.tm_mday) {
     today.t1Start = data.energy_delivered_tariff1.int_val();
     today.t2Start = data.energy_delivered_tariff2.int_val();
     today.gasStart = data.gas_delivered.int_val();
-  };
+    currentMonthDay = timeinfo.tm_mday;
+  }
 
   snprintf(currentUseString, sizeof(currentUseString), "%i\n%i\n%i\n%i\n%i\n%i\n%i\n%s",
            data.power_delivered.int_val(),
@@ -239,15 +244,5 @@ void parseAndSend(String& telegram) {
     oled.setFont(ArialMT_Plain_24);
     oled.drawString(oled.width() >> 1, 18, String(data.power_delivered.int_val()) + "W");
     oled.display();
-  }
-
-  /* check if we changed day and update starter values if so */
-  struct tm timeinfo = {0};
-  getLocalTime(&timeinfo);
-  if (currentMonthDay != timeinfo.tm_mday) {
-    today.t1Start = data.energy_delivered_tariff1.int_val();
-    today.t2Start = data.energy_delivered_tariff2.int_val();
-    today.gasStart = data.gas_delivered.int_val();
-    currentMonthDay = timeinfo.tm_mday;
   }
 }
