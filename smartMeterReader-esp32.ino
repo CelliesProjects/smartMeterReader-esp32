@@ -20,7 +20,6 @@
 
 #include "wifisetup.h"
 #include "index_htm.h"
-#include "decoded_fields.h"
 
 #if defined(SH1106_OLED)
 #include <SH1106.h>                /* Install via 'Manage Libraries' in Arduino IDE -> https://github.com/ThingPulse/esp8266-oled-ssd1306 */
@@ -197,6 +196,13 @@ void parseAndSend(String& telegram) {
 
   ws_raw.textAll(telegram);
 
+  using decodedFields = ParsedData <
+                        /* FixedValue */ energy_delivered_tariff1,
+                        /* FixedValue */ energy_delivered_tariff2,
+                        /* String */ electricity_tariff,
+                        /* FixedValue */ power_delivered,
+                        /* TimestampedFixedValue */ gas_delivered
+                        >;
   decodedFields data;
   const ParseResult<void> res = P1Parser::parse(&data, telegram.c_str(), telegram.length());
 
