@@ -5,7 +5,7 @@
  * and printing code smaller.
  * Each template argument below results in a field of the same name.
  */
-using currentUseData = ParsedData<
+using decodedFields = ParsedData<
   /* FixedValue */ energy_delivered_tariff1,
   /* FixedValue */ energy_delivered_tariff2,
   /* String */ electricity_tariff,

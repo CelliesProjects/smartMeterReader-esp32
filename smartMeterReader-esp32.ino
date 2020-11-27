@@ -50,8 +50,8 @@ const IPAddress SUBNET(255, 255, 255, 0);                /* Usually 255,255,255,
 const IPAddress PRIMARY_DNS(192, 168, 0, 30);            /* Check in your router */
 const IPAddress SECONDARY_DNS(192, 168, 0, 50);          /* Check in your router */
 
-const char*     WS_RAW_URL{"/raw"};
-const char*     WS_CURRENT_URL{"/current"};
+const char*     WS_RAW_URL = "/raw";
+const char*     WS_CURRENT_URL = "/current";
 
 AsyncWebServer  server(80);
 AsyncWebSocket  ws_raw(WS_RAW_URL);
@@ -107,7 +107,9 @@ void setup() {
   /* sync the clock with ntp */
   configTzTime(TIMEZONE, NTP_POOL);
 
-  struct tm timeinfo = {0};
+  struct tm timeinfo {
+    0
+  };
 
   while (!getLocalTime(&timeinfo, 0))
     delay(10);
@@ -195,7 +197,7 @@ void parseAndSend(String& telegram) {
 
   ws_raw.textAll(telegram);
 
-  currentUseData data;
+  decodedFields data;
   const ParseResult<void> res = P1Parser::parse(&data, telegram.c_str(), telegram.length());
 
   if (res.err) {
@@ -203,7 +205,13 @@ void parseAndSend(String& telegram) {
     telegram = "";
     return;
   }
+
   telegram = "";
+
+  if (!data.all_present()) {
+    ESP_LOGE(TAG, "Could not decode all fields");
+    return;
+  }
 
   static struct {
     uint32_t t1Start;
@@ -211,7 +219,7 @@ void parseAndSend(String& telegram) {
     uint32_t gasStart;
   } today;
 
-  /* out of range value so it will be always be updated in the next check */
+  /* out of range value so it will be be updated in the next check */
   static uint8_t currentMonthDay{40};
 
   /* check if we changed day and update starter values if so */
