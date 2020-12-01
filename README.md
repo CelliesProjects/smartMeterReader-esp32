@@ -38,15 +38,19 @@ The driver library for a ssd1306/sh1106 oled can be installed with the Arduino l
 
 ## Hardware
 
-Very convenient is that an esp32 flashed with `smartMeterReader-esp32` can be run from the 5V supplied by the smartmeter if equiped with a proper WiFi antenna. (This reduces the required power)<br>The LilyGo TTGO T7 is a nice board with an external antenna connector and a decent 3.3v LDO. Without an external antenna the WiFi signal tends to be too poor to be of any use over longer distances and/or through several walls.
+### ESP32: LilyGo TTGO T7 with external antenna
+
+My personal preference is for the LilyGo TTGO T7. The LilyGo TTGO T7 is a good board with an external antenna connector and a decent 3.3v LDO. Without an external antenna the WiFi signal tends to be too poor to be of any use over longer distances and/or through several walls. The board will have to modified slightly to enable the external antenna.
 
 ![T7 pic](t7.jpg)
 
-Here you can see how to enable the external antenna. Move the zero ohm resistor from position 1-2 to position 3-4. Or remove the resistor and solder position 3-4 closed.
+Below you can see how to enable the external antenna. Move the zero ohm resistor from position 1-2 to position 3-4. Or remove the resistor and solder position 3-4 closed.
 
 ![external-config](https://user-images.githubusercontent.com/17033305/78676790-34fd1080-78e7-11ea-8bb0-aee88efe75a6.jpg)
 
 See [this LilyGo issue](https://github.com/LilyGO/ESP32-MINI-32-V1.3/issues/4#issuecomment-610394847) about the external antenna.
+
+### Level shifter / inverter
 
 To invert and level shift the signal you can use a bc547 transistor with some resistors. For example like this:
 
