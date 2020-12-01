@@ -7,9 +7,9 @@ Websocket clients connected to `ws://ip-address/raw` get the raw dsmr telegram p
 Also included is a http webserver so you can see your current energy use and the daily usage figures on your smartphone or pc browser.<br>
 No app required!
 
-![screenshot](screenshot.png)
+![screenshot](img/screenshot.png)
 
-![screenshot](screenshot_android.png)
+![screenshot](img/screenshot_android.png)
 
 ## How to use
 
@@ -42,7 +42,7 @@ The driver library for a ssd1306/sh1106 oled can be installed with the Arduino l
 
 My personal preference is for the LilyGo TTGO T7. The LilyGo TTGO T7 is a good board with an external antenna connector and a decent 3.3v LDO. Without an external antenna the WiFi signal tends to be too poor to be of any use over longer distances and/or through several walls. The board will have to modified slightly to enable the external antenna.
 
-![T7 pic](t7.jpg)
+![T7 pic](img/t7.jpg)
 
 Below you can see how to enable the external antenna. Move the zero ohm resistor from position 1-2 to position 3-4. Or remove the resistor and solder position 3-4 closed.
 
@@ -57,3 +57,11 @@ To invert and level shift the signal you can use a bc547 transistor with some re
 ![invert-and-level-shift](https://willem.aandewiel.nl/wp-content/uploads/2019/04/DSMR_LevelShifter_Circuit-300x251.png)
 
 See [willem.aandewiel.nl/dsmr-logger-v4-slimme-meter-uitlezer/](https://willem.aandewiel.nl/index.php/2019/04/09/dsmr-logger-v4-slimme-meter-uitlezer/)
+
+### Some board variants
+
+![board no oled](img/board_no_oled.png)
+
+![board sh1106](img/board_sh1106.png)
+
+![board ssd1306](img/board_ssd1306.png)
