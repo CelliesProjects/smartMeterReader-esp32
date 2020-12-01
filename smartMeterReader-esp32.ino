@@ -140,15 +140,24 @@ void setup() {
 }
 
 void loop() {
-  static String telegram{""};
-
   ws_raw.cleanupClients();
   ws_current.cleanupClients();
 
   while (smartMeter.available()) {
+    static String telegram{""};
     const char incomingChar = smartMeter.read();
     telegram.concat(incomingChar);
-    if ('!' == incomingChar) parseAndSend(telegram);
+    if ('!' == incomingChar) {      /* checksum reached, wait for and read 6 more bytes then the telegram is received completely - see DSMR 5.0.2 ¶ 6.2 */
+      while (smartMeter.available() < 6)
+        delay(1);
+
+      while (smartMeter.available())
+        telegram.concat((char)smartMeter.read());
+
+      ws_raw.textAll(telegram);
+      process(telegram);
+      telegram = "";
+    }
   }
   delay(1);
 }
@@ -188,13 +197,8 @@ void onEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   }
 }
 
-void parseAndSend(String& telegram) {
-  /* checksum reached, wait for and read 6 more bytes then the telegram is received completely - see DSMR 5.0.2 ¶ 6.2 */
-  while (smartMeter.available() < 6) delay(1);
-
-  while (smartMeter.available()) telegram.concat((char)smartMeter.read());
-
-  ws_raw.textAll(telegram);
+void process(const String& telegram) {
+  ESP_LOGD(TAG, "%s", telegram.c_str());
 
   using decodedFields = ParsedData <
                         /* FixedValue */ energy_delivered_tariff1,
@@ -208,11 +212,8 @@ void parseAndSend(String& telegram) {
 
   if (res.err) {
     ESP_LOGE(TAG, "%s", res.fullError(telegram.c_str(), telegram.c_str() + telegram.length()));
-    telegram = "";
     return;
   }
-
-  telegram = "";
 
   if (!data.all_present()) {
     ESP_LOGE(TAG, "Could not decode all fields");
