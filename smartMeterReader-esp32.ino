@@ -28,7 +28,7 @@
 #endif
 
 /* settings for smartMeter */
-#define RXD_PIN                         (26)
+#define RXD_PIN                         (36)
 #define BAUDRATE                        (115200)
 #define UART_NR                         (UART_NUM_2)
 
