@@ -19,7 +19,7 @@
 #include <dsmr.h>                  /* https://github.com/matthijskooijman/arduino-dsmr */
 
 #include "wifisetup.h"
-#include "index_htm.h"
+#include "index_htm_gz.h"
 
 #if defined(SH1106_OLED)
 #include <SH1106.h>                /* Install via 'Manage Libraries' in Arduino IDE -> https://github.com/ThingPulse/esp8266-oled-ssd1306 */
@@ -63,7 +63,14 @@ SH1106          oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
 SSD1306         oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
 #endif
 
+time_t          bootTime;
 bool            oledFound{false};
+
+const char* HEADER_MODIFIED_SINCE = "If-Modified-Since";
+
+static inline __attribute__((always_inline)) bool htmlUnmodified(const AsyncWebServerRequest* request, const char* date) {
+  return request->hasHeader(HEADER_MODIFIED_SINCE) && request->header(HEADER_MODIFIED_SINCE).equals(date);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -114,6 +121,8 @@ void setup() {
   while (!getLocalTime(&timeinfo, 0))
     delay(10);
 
+  time(&bootTime);
+
   /* websocket setup */
   ws_raw.onEvent(onEvent);
   server.addHandler(&ws_raw);
@@ -122,15 +131,28 @@ void setup() {
   server.addHandler(&ws_current);
 
   /* webserver setup */
-  static const char* HTML_HEADER = "text/html";
+  static char modifiedDate[30];
+  strftime(modifiedDate, sizeof(modifiedDate), "%a, %d %b %Y %X GMT", gmtime(&bootTime));
 
-  server.on("/", HTTP_GET, [] (AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, HTML_HEADER, index_htm, index_htm_len);
+  static const char* HTML_MIMETYPE{"text/html"};
+
+  static const char* HEADER_LASTMODIFIED{"Last-Modified"};
+
+  static const char* CONTENT_ENCODING_HEADER{"Content-Encoding"};
+  static const char* CONTENT_ENCODING_VALUE{"gzip"};
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
+    if (htmlUnmodified(request, modifiedDate)) return request->send(304);
+    AsyncWebServerResponse *response = request->beginResponse_P(200, HTML_MIMETYPE, index_htm_gz, index_htm_gz_len);
+    response->addHeader(HEADER_LASTMODIFIED, modifiedDate);
+    response->addHeader(CONTENT_ENCODING_HEADER, CONTENT_ENCODING_VALUE);
     request->send(response);
   });
+
   server.onNotFound([](AsyncWebServerRequest * request) {
     request->send(404);
   });
+
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   server.begin();
 
