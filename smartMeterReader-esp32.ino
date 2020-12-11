@@ -95,6 +95,7 @@ void setup() {
 
   while (!WiFi.isConnected())
     delay(10);
+  WiFi.onEvent(WiFiEvent);
   Serial.printf("Connected: %s\n", WiFi.localIP().toString().c_str());
 
   if (oledFound) {
@@ -259,5 +260,34 @@ void process(const String& telegram) {
     oled.setFont(ArialMT_Plain_24);
     oled.drawString(oled.width() >> 1, 18, String(data.power_delivered.int_val()) + "W");
     oled.display();
+  }
+}
+
+void WiFiEvent(WiFiEvent_t event) {
+  switch (event) {
+    case SYSTEM_EVENT_STA_START:
+      ESP_LOGD(TAG, "STA Started");
+      //WiFi.setHostname( DEFAULT_HOSTNAME_PREFIX.c_str();
+      break;
+    case SYSTEM_EVENT_STA_CONNECTED:
+      ESP_LOGD(TAG, "STA Connected");
+      //WiFi.enableIpV6();
+      break;
+    case SYSTEM_EVENT_AP_STA_GOT_IP6:
+      ESP_LOGD(TAG, "STA IPv6: ");
+      ESP_LOGD(TAG, "%s", WiFi.localIPv6().toString());
+      break;
+    case SYSTEM_EVENT_STA_GOT_IP:
+      ESP_LOGD(TAG, "STA IPv4: %s", WiFi.localIP());
+      break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+      ESP_LOGI(TAG, "STA Disconnected");
+      WiFi.begin();
+      break;
+    case SYSTEM_EVENT_STA_STOP:
+      ESP_LOGI(TAG, "STA Stopped");
+      break;
+    default:
+      break;
   }
 }
