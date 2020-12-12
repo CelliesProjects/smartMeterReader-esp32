@@ -1,7 +1,7 @@
 /*
     This is a serial to websocket server for application with a DSMR 5.0.2 conform 'Dutch Smart Meter'.
 
-    This sketch reads telegrams (terminated by a checksum) from a smart meter connected through Serial2 on RXD_PIN
+    This sketch reads telegrams (terminated by a checksum) from a smart meter connected through Serial2 on UART_RXD_PIN
 
     and pushes these telegrams to websocket clients connected on '/raw'.
 
@@ -22,15 +22,16 @@
 #include "index_htm_gz.h"
 
 #if defined(SH1106_OLED)
-#include <SH1106.h>                /* Install via 'Manage Libraries' in Arduino IDE -> https://github.com/ThingPulse/esp8266-oled-ssd1306 */
+#include <SH1106.h>                /* Install via 'Manage Libraries' in Arduino IDE. Use the ThingPulse ssd1306 driver */
 #else
 #include <SSD1306.h>               /* In same library as SH1106 */
 #endif
 
 /* settings for smartMeter */
-#define RXD_PIN                         (36)
-#define BAUDRATE                        (115200)
-#define UART_NR                         (UART_NUM_2)
+#define UART_RXD_PIN                    (36)
+#define UART_BAUDRATE                   (115200)
+#define UART_SETTINGS                   SERIAL_8N1       /* https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-uart.h */
+#define UART_NUM                        (UART_NUM_2)
 
 /* settings for a ssd1306/sh1106 oled screen */
 #define OLED_ADDRESS                    (0x3C)
@@ -55,7 +56,7 @@ const char*     WS_CURRENT_URL = "/current";
 AsyncWebServer  server(80);
 AsyncWebSocket  ws_raw(WS_RAW_URL);
 AsyncWebSocket  ws_current(WS_CURRENT_URL);
-HardwareSerial  smartMeter(UART_NR);
+HardwareSerial  smartMeter(UART_NUM);
 
 #if defined(SH1106_OLED)
 SH1106          oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
@@ -63,7 +64,6 @@ SH1106          oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
 SSD1306         oled(OLED_ADDRESS, I2C_SDA_PIN, I2C_SCL_PIN);
 #endif
 
-time_t          bootTime;
 bool            oledFound{false};
 
 const char* HEADER_MODIFIED_SINCE = "If-Modified-Since";
@@ -121,8 +121,6 @@ void setup() {
   while (!getLocalTime(&timeinfo, 0))
     delay(10);
 
-  time(&bootTime);
-
   /* websocket setup */
   ws_raw.onEvent(onEvent);
   server.addHandler(&ws_raw);
@@ -131,6 +129,9 @@ void setup() {
   server.addHandler(&ws_current);
 
   /* webserver setup */
+  time_t bootTime;
+  time(&bootTime);
+
   static char modifiedDate[30];
   strftime(modifiedDate, sizeof(modifiedDate), "%a, %d %b %Y %X GMT", gmtime(&bootTime));
 
@@ -139,13 +140,13 @@ void setup() {
   static const char* HEADER_LASTMODIFIED{"Last-Modified"};
 
   static const char* CONTENT_ENCODING_HEADER{"Content-Encoding"};
-  static const char* CONTENT_ENCODING_VALUE{"gzip"};
+  static const char* CONTENT_ENCODING_GZIP{"gzip"};
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
     if (htmlUnmodified(request, modifiedDate)) return request->send(304);
     AsyncWebServerResponse *response = request->beginResponse_P(200, HTML_MIMETYPE, index_htm_gz, index_htm_gz_len);
     response->addHeader(HEADER_LASTMODIFIED, modifiedDate);
-    response->addHeader(CONTENT_ENCODING_HEADER, CONTENT_ENCODING_VALUE);
+    response->addHeader(CONTENT_ENCODING_HEADER, CONTENT_ENCODING_GZIP);
     request->send(response);
   });
 
@@ -157,9 +158,9 @@ void setup() {
   server.begin();
 
   /* start listening on the smartmeter */
-  smartMeter.begin(BAUDRATE, SERIAL_8N1, RXD_PIN);
+  smartMeter.begin(UART_BAUDRATE, UART_SETTINGS, UART_RXD_PIN);
 
-  Serial.printf("Listening on HardwareSerial(%i) with RXD_PIN=%i\n", UART_NR, RXD_PIN);
+  Serial.printf("Listening on HardwareSerial(%i) with UART_RXD_PIN=%i\n", UART_NUM, UART_RXD_PIN);
 }
 
 void loop() {
@@ -232,16 +233,16 @@ void process(const String& telegram) {
                         >;
   decodedFields data;
   const ParseResult<void> res = P1Parser::parse(&data, telegram.c_str(), telegram.length());
+  /*
+    if (res.err) {
+      ESP_LOGE(TAG, "%s", res.fullError(telegram.c_str(), telegram.c_str() + telegram.length()));
+    }
 
-  if (res.err) {
-    ESP_LOGE(TAG, "%s", res.fullError(telegram.c_str(), telegram.c_str() + telegram.length()));
-    return;
-  }
-
-  if (!data.all_present()) {
-    ESP_LOGE(TAG, "Could not decode all fields");
-    return;
-  }
+    if (!data.all_present()) {
+      ESP_LOGE(TAG, "Could not decode all fields");
+    }
+  */
+  if (res.err || !data.all_present()) return;
 
   static struct {
     uint32_t t1Start;
@@ -280,7 +281,7 @@ void process(const String& telegram) {
     oled.setFont(ArialMT_Plain_16);
     oled.drawString(oled.width() >> 1, 0, WiFi.localIP().toString());
     oled.setFont(ArialMT_Plain_24);
-    oled.drawString(oled.width() >> 1, 18, String(data.power_delivered.int_val()) + "W");
+    oled.drawString(oled.width() >> 1, 18, String(data.power_delivered.int_val()) + " W");
     oled.display();
   }
 }
@@ -291,23 +292,15 @@ void WiFiEvent(WiFiEvent_t event) {
       ESP_LOGD(TAG, "STA Started");
       //WiFi.setHostname( DEFAULT_HOSTNAME_PREFIX.c_str();
       break;
-    case SYSTEM_EVENT_STA_CONNECTED:
-      ESP_LOGD(TAG, "STA Connected");
-      //WiFi.enableIpV6();
-      break;
-    case SYSTEM_EVENT_AP_STA_GOT_IP6:
-      ESP_LOGD(TAG, "STA IPv6: ");
-      ESP_LOGD(TAG, "%s", WiFi.localIPv6().toString());
-      break;
     case SYSTEM_EVENT_STA_GOT_IP:
       ESP_LOGD(TAG, "STA IPv4: %s", WiFi.localIP());
       break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
-      ESP_LOGI(TAG, "STA Disconnected");
+      ESP_LOGE(TAG, "STA Disconnected");
       WiFi.begin();
       break;
     case SYSTEM_EVENT_STA_STOP:
-      ESP_LOGI(TAG, "STA Stopped");
+      ESP_LOGE(TAG, "STA Stopped");
       break;
     default:
       break;
