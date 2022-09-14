@@ -7,6 +7,10 @@ Websocket clients connected to `ws://ip-address/raw` get the raw dsmr telegram p
 Also included is a http webserver so you can see your current energy use and the daily usage figures on your smartphone or pc browser.<br>
 No app required!
 
+This app will no longer be updated (and no bug fixes) but you can use [smartMeterLogger](https://github.com/CelliesProjects/smartMeterLogger-esp32) that has the same functionality and also saves the usage history to an sdcard.
+
+Another handy app is [M5-energyUse](https://github.com/CelliesProjects/M5-energyUse) which is an app for an M5Stack v1 that connects to the smartMeterLogger and shows your energy use continously on the display.
+
 ![screenshot](img/screenshot.png)
 
 ![screenshot](img/screenshot_android.png)
